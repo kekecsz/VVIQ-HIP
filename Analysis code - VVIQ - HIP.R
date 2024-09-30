@@ -4,6 +4,8 @@
 library(psych)
 library(tidyverse) # for tidy coding and ggplot
 library(boot)
+library(ltm) # for cronbach.alpha
+
 
 #### Custom functions
 # bootstrap CI for correlation
@@ -58,6 +60,36 @@ data_for_analysis_with_outliers = data_processed %>%
  
 table(data_for_analysis$gender)
 
+### Internal consistency
+## Chronbach's alpha
+
+
+# HGSHS
+HGSHS_subject_items = as.data.frame(cbind(data_for_analysis$HGSHS_subject_01, data_for_analysis$HGSHS_subject_02, data_for_analysis$HGSHS_subject_03, 
+data_for_analysis$HGSHS_subject_04, data_for_analysis$HGSHS_subject_05, data_for_analysis$HGSHS_subject_06, 
+data_for_analysis$HGSHS_subject_07, data_for_analysis$HGSHS_subject_08, data_for_analysis$HGSHS_subject_09, 
+data_for_analysis$HGSHS_subject_10, data_for_analysis$HGSHS_subject_11, data_for_analysis$HGSHS_subject_12))
+cronbach.alpha(HGSHS_subject_items, CI=TRUE, standardized=TRUE)
+
+# VVIQ
+VVIQ_items = as.data.frame(cbind(data_for_analysis$VVIQ1, data_for_analysis$VVIQ2, data_for_analysis$VVIQ3, data_for_analysis$VVIQ4, 
+      data_for_analysis$VVIQ5, data_for_analysis$VVIQ6, data_for_analysis$VVIQ7, data_for_analysis$VVIQ8, 
+      data_for_analysis$VVIQ9, data_for_analysis$VVIQ10, data_for_analysis$VVIQ11, data_for_analysis$VVIQ12, 
+      data_for_analysis$VVIQ13, data_for_analysis$VVIQ14, data_for_analysis$VVIQ15, data_for_analysis$VVIQ16))
+cronbach.alpha(VVIQ_items, CI=TRUE, standardized=TRUE)
+
+
+# Imagery - Main dimension
+Imagery_main = data.frame(PCI12_rev = 6-data_for_analysis$PCI12, PCI44 = data_for_analysis$PCI44, PCI18_rev = 6-data_for_analysis$PCI18, PCI48 = data_for_analysis$PCI48)
+cronbach.alpha(Imagery_main, CI=TRUE, standardized=TRUE)
+
+# Imagery amount
+Imagery_amount = data.frame(PCI12_rev = 6-data_for_analysis$PCI12, PCI44 = data_for_analysis$PCI44)
+cronbach.alpha(Imagery_amount, CI=TRUE, standardized=TRUE)
+
+# Imagery vividness
+Imagery_vividness = data.frame(PCI18_rev = 6-data_for_analysis$PCI18, PCI48 = data_for_analysis$PCI48)
+cronbach.alpha(Imagery_vividness, CI=TRUE, standardized=TRUE)
 
 
 ### Assumption test for Pearson correlation
@@ -155,13 +187,29 @@ cor.test(data_for_analysis$HGSHS_subject_total, data_for_analysis$VVIQ_total, al
 
 data_for_analysis %>% 
 ggplot()+
-  aes(x = VVIQ_total, y = HGSHS_subject_total)+
-  geom_point()+
+  aes(x = HGSHS_subject_total, y = VVIQ_total)+
+  geom_jitter()+
   geom_smooth(method = "lm")+
-  scale_y_continuous(breaks = c(0:12))+
-  scale_x_continuous(breaks = seq(0,80,10))+
+  scale_y_continuous(breaks = seq(0,80,10))+
+  scale_x_continuous(breaks = c(0:12))+
   theme_bw()+
-  theme(axis.text=element_text(size=20), axis.title=element_text(size=20,face="bold"))
+  theme(axis.text=element_text(size=20), axis.title=element_text(size=20,face="bold"))+
+  labs(
+    x = "HGSHS total score",
+    y = "VVIQ total score"
+  )
+
+### Gender differences in correlation
+
+data_for_analysis %>% 
+  filter(gender == "male") %>% 
+  select(HGSHS_subject_total, VVIQ_total) %>% 
+  cor()
+
+data_for_analysis %>% 
+  filter(gender == "female") %>% 
+  select(HGSHS_subject_total, VVIQ_total) %>% 
+  cor()
 
 ## Testing H1 with outliers included
 set.seed(1)
@@ -171,13 +219,17 @@ boot.ci(boot_model, type = c("bca"), conf = 0.90)
 
 data_for_analysis_with_outliers %>% 
   ggplot()+
-  aes(x = VVIQ_total, y = HGSHS_subject_total)+
+  aes(x = HGSHS_subject_total, y = VVIQ_total)+
   geom_point()+
   geom_smooth(method = "lm")+
-  scale_y_continuous(breaks = c(0:12))+
-  scale_x_continuous(breaks = seq(0,80,10))+
+  scale_y_continuous(breaks = seq(0,80,10))+
+  scale_x_continuous(breaks = c(0:12))+
   theme_bw()+
-  theme(axis.text=element_text(size=20), axis.title=element_text(size=20,face="bold"))
+  theme(axis.text=element_text(size=20), axis.title=element_text(size=20,face="bold"))+
+  labs(
+    x = "HGSHS total score",
+    y = "VVIQ total score"
+  )
 
 
 ### Q2: There is a positive correlation between VVIQ and the Imagery factors of PCI: Imagery Main Dimension, Imagery amount subdimension, and Imagery Vividness subdimension.
@@ -275,6 +327,8 @@ data_for_analysis %>%
   scale_x_continuous(breaks = seq(0,12,1))+
   theme_bw()+
   theme(axis.text=element_text(size=20), axis.title=element_text(size=20,face="bold"))
+
+data_for_analysis
 
 
 # write.csv(data_processed, paste0(data_directory, "Data_processed.csv"), row.names = F)
